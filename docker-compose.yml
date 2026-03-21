@@ -8,7 +8,7 @@ services:
     container_name: alfred-backend
     environment:
       - DATABASE_URL=sqlite:///./alfred.db
-      - VOIGHT_KAMPFF_URL=http://host.docker.internal:8000
+      - VOIGHT_KAMPFF_URL=http://voight-kampff:8000
       - SECRET_KEY=your-secret-key-change-in-production
       - UPLOAD_MAX_SIZE=10485760
       - UPLOAD_ALLOWED_EXTENSIONS=jpg,jpeg,png,gif,webp
@@ -16,7 +16,7 @@ services:
       - alfred_uploads:/app/uploads
       - alfred_database:/app/data
     networks:
-      - alfred-network
+      - ansible
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health', timeout=10)"]
@@ -35,7 +35,7 @@ services:
     depends_on:
       - alfred-backend
     networks:
-      - alfred-network
+      - ansible
     restart: unless-stopped
 
 volumes:
@@ -45,5 +45,6 @@ volumes:
     driver: local
 
 networks:
-  alfred-network:
+  ansible:
+    external: true
     driver: bridge
