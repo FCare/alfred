@@ -16,7 +16,7 @@ router = APIRouter()
 list_service = ListService()
 
 
-@router.get("", response_model=ListType[schemas.ListSummary])
+@router.get("/", response_model=ListType[schemas.ListSummary])
 async def get_user_lists(
     current_user: schemas.CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -45,7 +45,7 @@ async def get_list(
     return await list_service.get_list_with_items(db=db, list_obj=list_obj)
 
 
-@router.post("", response_model=schemas.List, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=schemas.List, status_code=status.HTTP_201_CREATED)
 async def create_list(
     list_data: schemas.ListCreate,
     current_user: schemas.CurrentUser = Depends(get_current_user),

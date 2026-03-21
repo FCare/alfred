@@ -14,7 +14,7 @@ router = APIRouter()
 search_service = SearchService()
 
 
-@router.get("", response_model=schemas.SearchResponse)
+@router.get("/", response_model=schemas.SearchResponse)
 async def search(
     q: str = Query(..., min_length=1, description="Search query"),
     current_user: schemas.CurrentUser = Depends(get_current_user),
