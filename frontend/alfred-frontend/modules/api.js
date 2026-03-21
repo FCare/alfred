@@ -4,6 +4,7 @@
 
 class AlfredAPI {
     constructor() {
+        // Use simple relative URLs - nginx routes /api/ to backend
         this.baseURL = '/api/v1';
         this.defaultHeaders = {
             'Content-Type': 'application/json',
