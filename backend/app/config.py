@@ -9,10 +9,6 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "sqlite:///./data/alfred.db"
     
-    # Voight-Kampff integration
-    voight_kampff_url: str = "http://voight-kampff:8080"
-    voight_kampff_verify_endpoint: str = "/verify"
-    
     # File uploads
     upload_path: str = "./uploads"
     max_upload_size: int = 10 * 1024 * 1024  # 10MB
