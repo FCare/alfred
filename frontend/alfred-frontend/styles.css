@@ -93,52 +93,6 @@ body {
     font-weight: 400;
 }
 
-/* Auth Button */
-.auth-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-    border: 1px solid #d1d5db;
-    border-radius: 12px;
-    color: #374151;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.auth-btn:hover {
-    background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
-    border-color: #9ca3af;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.auth-btn:active {
-    transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.auth-btn svg {
-    width: 18px;
-    height: 18px;
-}
-
-.logout-btn {
-    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-    border-color: #f87171;
-    color: #dc2626;
-    margin-left: 10px;
-}
-
-.logout-btn:hover {
-    background: linear-gradient(135deg, #fecaca 0%, #f87171 100%);
-    border-color: #dc2626;
-    color: #fff;
-}
 
 /* Chat Area - Adaptée pour Alfred */
 .chat-container {

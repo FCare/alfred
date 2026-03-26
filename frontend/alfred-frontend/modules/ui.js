@@ -79,15 +79,6 @@ class UIManager {
         }
     }
 
-    /**
-     * Show auth overlay
-     */
-    showAuthOverlay() {
-        const overlay = document.getElementById('auth-overlay');
-        if (overlay) {
-            overlay.style.display = 'flex';
-        }
-    }
 
     /**
      * Show main app

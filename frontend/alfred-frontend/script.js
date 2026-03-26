@@ -25,18 +25,11 @@ class AlfredApp {
             // Setup global event listeners
             this.setupGlobalEvents();
             
-            // Initialize authentication
-            const isAuthenticated = await authManager.init();
+            // Initialize application modules
+            await this.initializeApp();
             
-            if (isAuthenticated) {
-                // Initialize application modules
-                await this.initializeApp();
-                
-                console.log('✅ Alfred initialized successfully');
-                this.isInitialized = true;
-            } else {
-                console.log('❌ Authentication failed');
-            }
+            console.log('✅ Alfred initialized successfully');
+            this.isInitialized = true;
             
         } catch (error) {
             console.error('Failed to initialize Alfred:', error);
@@ -53,7 +46,6 @@ class AlfredApp {
         UI.init();
         
         // Initialize other managers
-        authManager.init(); // Don't await, it handles its own flow
         uploadManager.init();
         searchManager.init();
         sharingManager.init();
@@ -62,7 +54,6 @@ class AlfredApp {
         
         this.managers = {
             ui: UI,
-            auth: authManager,
             upload: uploadManager,
             search: searchManager,
             sharing: sharingManager,
@@ -75,14 +66,6 @@ class AlfredApp {
      * Setup global event listeners
      */
     setupGlobalEvents() {
-        // Logout button
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', async () => {
-                await authManager.logout();
-            });
-        }
-
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => this.handleGlobalKeyboard(e));
         
@@ -102,7 +85,7 @@ class AlfredApp {
     }
 
     /**
-     * Initialize application after authentication
+     * Initialize application
      */
     async initializeApp() {
         try {
@@ -415,7 +398,6 @@ Global objects available:
 - alfredApp: Main application instance
 - alfredAPI: API client
 - UI: User interface manager
-- authManager: Authentication manager
 - listsManager: Lists management
 - itemsManager: Items management
 - searchManager: Search functionality

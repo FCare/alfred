@@ -30,11 +30,7 @@ class AlfredAPI {
         try {
             const response = await fetch(url, config);
             
-            // Handle authentication errors
-            if (response.status === 401) {
-                window.location.href = 'https://auth.caronboulme.fr/auth/login';
-                return null;
-            }
+            // Authentication is handled by Traefik
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -379,17 +375,6 @@ class AlfredAPI {
         return `${this.baseURL}/upload/image/${filename}`;
     }
 
-    /**
-     * Check if user is authenticated by making a test request
-     */
-    async checkAuth() {
-        try {
-            await this.getLists();
-            return true;
-        } catch (error) {
-            return false;
-        }
-    }
 }
 
 // Create a global API instance
