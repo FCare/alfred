@@ -3,7 +3,7 @@ Business logic for shopping lists management
 """
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import func, or_, and_
-from typing import List as ListType, Optional
+from typing import List, Optional
 from datetime import datetime
 import logging
 
@@ -25,7 +25,7 @@ class ListService:
         include_shared: bool = True,
         include_archived: bool = False,
         list_type: Optional[schemas.ListType] = None
-    ) -> ListType[schemas.ListSummary]:
+    ) -> List[schemas.ListSummary]:
         """
         Get all lists for a user (owned and shared)
         Optionally filter by list type
@@ -73,6 +73,7 @@ class ListService:
                 id=list_obj.id,
                 name=list_obj.name,
                 description=list_obj.description,
+                list_type=list_obj.list_type,
                 is_private=list_obj.is_private,
                 owner_id=list_obj.owner_id,
                 owner_username=list_obj.owner_username,
@@ -118,6 +119,7 @@ class ListService:
         db_list = db_models.List(
             name=list_data.name,
             description=list_data.description,
+            list_type=list_data.list_type,
             is_private=list_data.is_private,
             owner_id=owner.user_id,
             owner_username=owner.username
@@ -268,6 +270,7 @@ class ListService:
         new_list = db_models.List(
             name=duplicated_name,
             description=list_obj.description,
+            list_type=list_obj.list_type,
             is_private=list_obj.is_private,
             owner_id=owner.user_id,
             owner_username=owner.username
@@ -318,7 +321,7 @@ class ListService:
         db: Session,
         list_id: int,
         limit: int = 50
-    ) -> ListType[schemas.ListActivity]:
+    ) -> List[schemas.ListActivity]:
         """
         Get activity history for a list
         """

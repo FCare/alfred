@@ -3,254 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alfred - Gestionnaire de listes de courses</title>
+    <title>Alfred - Gestionnaire de listes</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-left">
-                <div class="title-container">
-                    <h1 class="title">Alfred</h1>
-                    <button id="lists-btn" class="mute-btn" title="Voir toutes les listes">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="3" y1="6" x2="21" y2="6"></line>
-                            <line x1="3" y1="12" x2="21" y2="12"></line>
-                            <line x1="3" y1="18" x2="21" y2="18"></line>
-                        </svg>
-                    </button>
-                </div>
-                <p class="subtitle">Gestionnaire de listes</p>
-            </div>
-            <div class="header-right">
-                <!-- Authentification gérée par Traefik -->
+    <div class="app">
+        <header class="app-header">
+            <div class="header-content">
+                <h1>Alfred</h1>
+                <p class="header-subtitle">Gestionnaire de liste</p>
             </div>
         </header>
 
-        <!-- Sidebar -->
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <h3>Mes listes</h3>
-                <div class="list-filters">
-                    <select id="type-filter" class="filter-select">
-                        <option value="">Tous les types</option>
+        <main class="app-main">
+            <!-- Liste des listes -->
+            <div id="lists-view" class="lists-view">
+                <div id="lists-container" class="lists-container">
+                    <!-- Les listes apparaîtront ici -->
+                </div>
+            </div>
+
+            <!-- Vue d'une liste spécifique -->
+            <div id="list-view" class="list-view" style="display: none;">
+                <div class="list-header">
+                    <h2 id="current-list-name">Liste</h2>
+                    <div class="list-actions">
+                        <button id="delete-list-btn" class="btn-icon btn-danger" title="Supprimer la liste">
+                            🗑️
+                        </button>
+                        <button id="close-list-btn" class="btn-icon btn-success" title="Fermer">
+                            ✓
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="list-content">
+                    <div class="add-item">
+                        <input type="text" id="new-item-input" placeholder="Nom de l'élément..." />
+                        <input type="text" id="new-item-quantity" placeholder="Quantité (optionnel)" />
+                        <input type="text" id="new-item-comment" placeholder="Commentaire (optionnel)" />
+                        <input type="file" id="new-item-photo" accept="image/*" style="display: none;" />
+                        <button type="button" id="photo-btn" class="btn-icon" title="Ajouter une photo">📷</button>
+                        <button id="add-item-btn" class="btn btn-secondary">Ajouter</button>
+                    </div>
+                    
+                    <div id="items-container" class="items-container">
+                        <!-- Les éléments apparaîtront ici -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Modal simple pour création de liste -->
+        <div id="create-list-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Nouvelle liste</h3>
+                <form id="create-list-form">
+                    <input type="text" id="list-name-input" placeholder="Nom de la liste" required />
+                    <select id="list-type-input" required>
                         <option value="shopping">🛒 Courses</option>
                         <option value="todo">✅ Tâches</option>
-                        <option value="notes">📝 Notes</option>
-                        <option value="checklist">☑️ Vérification</option>
                         <option value="wishlist">🎁 Souhaits</option>
                         <option value="inventory">📦 Inventaire</option>
                     </select>
-                </div>
-            </div>
-            <div class="sidebar-content">
-                <div id="lists-loading" style="display: none;">Chargement...</div>
-                <div id="lists-empty" style="display: none;">
-                    <p>Aucune liste pour le moment</p>
-                    <button class="create-first-list-btn">Créer une liste</button>
-                </div>
-                <div id="lists-list" style="display: none;"></div>
-            </div>
-        </div>
-
-        <!-- Main Content Area -->
-        <div class="chat-container">
-            <div id="main-content" class="chat-messages">
-                <!-- Le contenu principal sera ici -->
-                <div class="welcome-screen">
-                    <h2>Bienvenue dans Alfred !</h2>
-                    <p>Créez une nouvelle liste ou sélectionnez une liste existante pour commencer.</p>
-                    
-                    <div class="quick-actions">
-                        <button class="quick-action-btn primary" id="new-list-quick">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                            <span>Nouvelle liste</span>
-                        </button>
-                        
-                        <button class="quick-action-btn secondary" id="search-quick">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <path d="m21 21-4.35-4.35"></path>
-                            </svg>
-                            <span>Rechercher</span>
-                        </button>
+                    <div class="modal-actions">
+                        <button type="button" id="cancel-create-btn" class="btn">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Créer</button>
                     </div>
-                    
-                    <div id="recent-lists" class="recent-lists" style="display: none;">
-                        <h3>Listes récentes</h3>
-                        <div id="recent-lists-container">
-                            <!-- Les listes récentes apparaîtront ici -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Input Area -->
-        <div class="input-container">
-            <div class="input-wrapper">
-                <button id="new-list-btn" class="file-upload-btn" title="Nouvelle liste">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                </button>
-                
-                <button id="add-item-btn" class="mic-btn" title="Ajouter un article" disabled>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2L2 7v10c0 5.55 3.84 10 9 10s9-4.45 9-10V7L12 2z"></path>
-                        <path d="M12 8v4"></path>
-                        <path d="M10 10h4"></path>
-                    </svg>
-                </button>
-                
-                <textarea
-                    id="action-input"
-                    placeholder="Tapez pour rechercher des listes ou ajouter un article..."
-                    rows="1"
-                    maxlength="500"
-                ></textarea>
-                
-                <button id="action-btn" class="send-btn" title="Exécuter l'action">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="m5 12 7-7 7 7"/>
-                        <path d="m12 19 0-14"/>
-                    </svg>
-                </button>
-            </div>
-            
-            <div class="input-footer">
-                <span class="help-text">Appuyez sur <kbd>Enter</kbd> pour valider, <kbd>Shift + Enter</kbd> pour nouvelle ligne</span>
+                </form>
             </div>
         </div>
     </div>
 
-    <!-- Loading indicator -->
-    <div id="loading" class="loading-indicator" style="display: none;">
-        <div class="spinner"></div>
-        <span>Alfred traite votre demande...</span>
-    </div>
-
-    <!-- Modal Nouvelle Liste -->
-    <div class="modal" id="list-modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="list-modal-title">Nouvelle liste</h3>
-                <button class="btn-close" onclick="listsManager.hideModal('list-modal')">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-            </div>
-
-            <form id="list-form">
-                <div class="form-group">
-                    <label class="form-label" for="list-name">Nom de la liste *</label>
-                    <input type="text" class="form-input" id="list-name" required placeholder="Ma liste de courses">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="list-type">Type de liste *</label>
-                    <select class="form-input" id="list-type" required>
-                        <option value="shopping">🛒 Liste de courses</option>
-                        <option value="todo">✅ Liste de tâches</option>
-                        <option value="notes">📝 Notes</option>
-                        <option value="checklist">☑️ Liste de vérification</option>
-                        <option value="wishlist">🎁 Liste de souhaits</option>
-                        <option value="inventory">📦 Inventaire</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="list-description">Description</label>
-                    <textarea class="form-textarea" id="list-description" placeholder="Description optionnelle..."></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-checkbox">
-                        <input type="checkbox" id="list-private">
-                        <span>Liste privée</span>
-                    </label>
-                </div>
-
-                <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="listsManager.hideModal('list-modal')">Annuler</button>
-                    <button type="submit" class="btn-primary">
-                        <span id="list-submit-text">Créer</span>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal Nouvel Article -->
-    <div class="modal" id="item-modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="item-modal-title">Nouvel article</h3>
-                <button class="btn-close" onclick="listsManager.hideModal('item-modal')">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-            </div>
-
-            <form id="item-form">
-                <div class="form-group">
-                    <label class="form-label" for="item-name">Nom de l'article *</label>
-                    <input type="text" class="form-input" id="item-name" required placeholder="Pain, lait, pommes...">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="item-quantity">Quantité</label>
-                    <input type="text" class="form-input" id="item-quantity" placeholder="2 kg, 1 boîte...">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="item-description">Note</label>
-                    <textarea class="form-textarea" id="item-description" placeholder="Note optionnelle..."></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="item-image">Photo</label>
-                    <div class="form-file">
-                        <input type="file" id="item-image" accept="image/*">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                            <polyline points="21,15 16,10 5,21"></polyline>
-                        </svg>
-                        <span>Ajouter une photo</span>
-                    </div>
-                </div>
-
-                <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="listsManager.hideModal('item-modal')">Annuler</button>
-                    <button type="submit" class="btn-primary">
-                        <span id="item-submit-text">Ajouter</span>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Container pour les notifications toast -->
-    <div id="toast-container"></div>
-
-    <!-- Scripts -->
     <script src="modules/api.js"></script>
-    <script src="modules/ui.js"></script>
     <script src="modules/lists.js"></script>
     <script src="modules/items.js"></script>
-    <script src="modules/search.js"></script>
-    <script src="modules/sharing.js"></script>
-    <script src="modules/upload.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

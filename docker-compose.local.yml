@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  alfred-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: alfred-backend-local
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./alfred.db
+      - SECRET_KEY=your-secret-key-change-in-production
+      - UPLOAD_MAX_SIZE=10485760
+      - UPLOAD_ALLOWED_EXTENSIONS=jpg,jpeg,png,gif,webp
+    volumes:
+      - alfred_uploads:/app/uploads
+      - alfred_database:/app/data
+    restart: unless-stopped
+
+  alfred-frontend:
+    image: nginx:alpine
+    container_name: alfred-frontend-local
+    ports:
+      - "5213:80"
+    volumes:
+      - ./frontend/alfred-frontend:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - alfred-backend
+    restart: unless-stopped
+
+volumes:
+  alfred_uploads:
+    driver: local
+  alfred_database:
+    driver: local

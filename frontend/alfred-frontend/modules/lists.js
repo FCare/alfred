@@ -1,18 +1,14 @@
 /**
- * Lists management for Alfred
+ * Gestionnaire de listes simplifié
  */
-
 class ListsManager {
     constructor() {
         this.lists = [];
         this.currentList = null;
-        this.sortBy = 'updated_at';
-        this.sortOrder = 'desc';
-        this.currentTypeFilter = '';
     }
 
     /**
-     * Initialize lists management
+     * Initialisation
      */
     init() {
         this.setupEventListeners();
@@ -20,657 +16,458 @@ class ListsManager {
     }
 
     /**
-     * Setup event listeners
+     * Configuration des event listeners
      */
     setupEventListeners() {
-        // Create list buttons - use direct DOM access since UI.addEventListener may not exist yet
-        const newListBtn = document.getElementById('new-list-btn');
-        if (newListBtn) {
-            newListBtn.addEventListener('click', () => this.showCreateModal());
-        }
-        
-        const newListQuick = document.getElementById('new-list-quick');
-        if (newListQuick) {
-            newListQuick.addEventListener('click', () => this.showCreateModal());
-        }
-        
-        // Handle first list creation button in empty state
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('create-first-list-btn')) {
-                this.showCreateModal();
-            }
-        });
-
-        // List form submission
-        const listForm = document.getElementById('list-form');
-        if (listForm) {
-            listForm.addEventListener('submit', (e) => this.handleListSubmit(e));
+        // Modal création de liste
+        const createForm = document.getElementById('create-list-form');
+        if (createForm) {
+            createForm.addEventListener('submit', (e) => this.handleCreateList(e));
         }
 
-        // Type filter
-        const typeFilter = document.getElementById('type-filter');
-        if (typeFilter) {
-            typeFilter.addEventListener('change', (e) => this.filterByType(e.target.value));
+        const cancelBtn = document.getElementById('cancel-create-btn');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => this.hideCreateModal());
         }
 
-        // List options menu
-        UI.addEventListener('list-options-btn', 'click', () => this.showListOptions());
-    }
+        // Boutons de la vue liste
+        const closeListBtn = document.getElementById('close-list-btn');
+        if (closeListBtn) {
+            closeListBtn.addEventListener('click', () => this.closeListView());
+        }
 
-    /**
-     * Filter lists by type
-     */
-    async filterByType(type) {
-        this.currentTypeFilter = type;
-        
-        // Reload lists from server with filter
-        try {
-            UI.showListsLoading();
-            const lists = await alfredAPI.getLists(true, false, type);
-            this.lists = lists || [];
-            this.renderLists();
-        } catch (error) {
-            console.error('Failed to filter lists:', error);
-            UI.showError('Impossible de filtrer les listes');
-            this.renderLists(); // Fallback to client-side filtering
+        const deleteListBtn = document.getElementById('delete-list-btn');
+        if (deleteListBtn) {
+            deleteListBtn.addEventListener('click', () => this.deleteCurrentList());
+        }
+
+        // Ajout d'élément
+        const addItemBtn = document.getElementById('add-item-btn');
+        if (addItemBtn) {
+            addItemBtn.addEventListener('click', () => this.addItem());
+        }
+
+        const newItemInput = document.getElementById('new-item-input');
+        if (newItemInput) {
+            newItemInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.addItem();
+                }
+            });
+        }
+
+        // Bouton photo
+        const photoBtn = document.getElementById('photo-btn');
+        const photoInput = document.getElementById('new-item-photo');
+        if (photoBtn && photoInput) {
+            photoBtn.addEventListener('click', () => photoInput.click());
+            photoInput.addEventListener('change', (e) => this.handlePhotoSelect(e));
         }
     }
 
     /**
-     * Load all lists
+     * Charger toutes les listes
      */
     async loadLists() {
         try {
-            UI.showListsLoading();
-            
-            const lists = await alfredAPI.getLists();
-            this.lists = lists || [];
-            
-            if (this.lists.length === 0) {
-                this.showListsEmpty();
-                this.showWelcomeScreen();
-            } else {
-                this.renderLists();
-                
-                // Show first list if no current list is selected
-                if (!this.currentList && this.lists.length > 0) {
-                    await this.selectList(this.lists[0].id);
-                }
-            }
+            const response = await alfredAPI.getLists();
+            this.lists = response || [];
+            this.renderLists();
         } catch (error) {
-            console.error('Failed to load lists:', error);
-            this.showError('Impossible de charger les listes');
-            this.showListsEmpty();
+            console.error('Erreur chargement listes:', error);
+            this.showMessage('Erreur lors du chargement des listes', 'error');
         }
     }
 
     /**
-     * Render lists in sidebar
+     * Afficher les listes
      */
     renderLists() {
-        const container = document.getElementById('lists-list');
+        const container = document.getElementById('lists-container');
         if (!container) return;
 
         container.innerHTML = '';
 
-        // Filter and sort lists
-        let filteredLists = this.lists;
-        
-        // Apply type filter
-        if (this.currentTypeFilter) {
-            filteredLists = filteredLists.filter(list =>
-                list.list_type === this.currentTypeFilter
-            );
-        }
-        
-        const sortedLists = this.getSortedLists(filteredLists);
-
-        sortedLists.forEach(list => {
-            const listElement = this.createListElement(list);
-            container.appendChild(listElement);
+        // Ajouter les listes existantes
+        this.lists.forEach(list => {
+            const card = this.createListCard(list);
+            container.appendChild(card);
         });
 
-        container.style.display = 'block';
-        UI.hideElement('lists-loading');
-        UI.hideElement('lists-empty');
+        // Ajouter la carte "Nouvelle liste" avec un +
+        const newListCard = this.createNewListCard();
+        container.appendChild(newListCard);
     }
 
     /**
-     * Create list element for sidebar
+     * Créer une carte de liste
      */
-    createListElement(list) {
-        const div = document.createElement('div');
-        div.className = `list-item ${this.currentList?.id === list.id ? 'active' : ''}`;
-        div.dataset.listId = list.id;
-
-        const progress = list.item_count > 0 ? Math.round((list.checked_count / list.item_count) * 100) : 0;
-        const progressText = list.item_count > 0 ? `${list.checked_count}/${list.item_count}` : 'Vide';
-
-        // Get list type info
-        const typeInfo = this.getListTypeInfo(list.list_type || 'shopping');
-
-        div.innerHTML = `
-            <div class="list-item-info">
-                <div class="list-item-header">
-                    <span class="list-type-icon">${typeInfo.icon}</span>
-                    <h4>${this.escapeHtml(list.name)}</h4>
-                </div>
-                <div class="list-item-meta">
-                    <span class="list-type-label">${typeInfo.label}</span>
-                    <span>${progressText}</span>
-                    ${progress > 0 ? `<span>${progress}% terminé</span>` : ''}
-                </div>
-            </div>
-            <div class="list-item-actions" style="opacity: 0;">
-                <button class="item-action-btn" onclick="listsManager.showListMenu(${list.id}, event)" title="Options">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <circle cx="12" cy="12" r="1"></circle>
-                        <circle cx="19" cy="12" r="1"></circle>
-                        <circle cx="5" cy="12" r="1"></circle>
-                    </svg>
-                </button>
+    createListCard(list) {
+        const card = document.createElement('div');
+        card.className = `list-card ${list.list_type || 'shopping'}`;
+        
+        const itemCount = list.item_count || 0;
+        const checkedCount = list.checked_count || 0;
+        
+        card.innerHTML = `
+            <h3>${this.escapeHtml(list.name)}</h3>
+            <div class="list-meta">
+                ${itemCount} élément${itemCount !== 1 ? 's' : ''}
+                ${checkedCount > 0 ? ` • ${checkedCount} coché${checkedCount !== 1 ? 's' : ''}` : ''}
             </div>
         `;
 
-        // Click to select list
-        div.addEventListener('click', (e) => {
-            if (!e.target.closest('.list-item-actions')) {
-                this.selectList(list.id);
-            }
-        });
+        card.addEventListener('click', () => this.openList(list.id));
 
-        // Show actions on hover
-        div.addEventListener('mouseenter', () => {
-            const actions = div.querySelector('.list-item-actions');
-            if (actions) actions.style.opacity = '1';
-        });
-
-        div.addEventListener('mouseleave', () => {
-            const actions = div.querySelector('.list-item-actions');
-            if (actions) actions.style.opacity = '0';
-        });
-
-        return div;
+        return card;
     }
 
     /**
-     * Get list type information
+     * Créer la carte "Nouvelle liste"
      */
-    getListTypeInfo(listType) {
-        const types = {
-            shopping: { icon: '🛒', label: 'Courses' },
-            todo: { icon: '✅', label: 'Tâches' },
-            notes: { icon: '📝', label: 'Notes' },
-            checklist: { icon: '☑️', label: 'Vérification' },
-            wishlist: { icon: '🎁', label: 'Souhaits' },
-            inventory: { icon: '📦', label: 'Inventaire' }
-        };
+    createNewListCard() {
+        const card = document.createElement('div');
+        card.className = 'list-card new-list-card';
         
-        return types[listType] || types.shopping;
+        card.innerHTML = `
+            <div class="new-list-content">
+                <div class="plus-icon">+</div>
+                <h3>Nouvelle liste</h3>
+            </div>
+        `;
+
+        card.addEventListener('click', () => this.showCreateModal());
+
+        return card;
     }
 
     /**
-     * Get sorted lists
+     * Ouvrir une liste
      */
-    getSortedLists(listsArray = null) {
-        const lists = listsArray || this.lists;
-        return [...lists].sort((a, b) => {
-            let aValue = a[this.sortBy];
-            let bValue = b[this.sortBy];
-
-            // Handle date sorting
-            if (this.sortBy.includes('_at')) {
-                aValue = new Date(aValue);
-                bValue = new Date(bValue);
-            }
-
-            if (this.sortOrder === 'desc') {
-                return bValue - aValue;
-            } else {
-                return aValue - bValue;
-            }
-        });
-    }
-
-    /**
-     * Select a list
-     */
-    async selectList(listId) {
+    async openList(listId) {
         try {
-            // Update UI to show we're loading
-            const listItem = document.querySelector(`[data-list-id="${listId}"]`);
-            if (listItem) {
-                // Remove active class from all items
-                document.querySelectorAll('.list-item.active').forEach(item => {
-                    item.classList.remove('active');
-                });
-                // Add active class to selected item
-                listItem.classList.add('active');
-            }
-
-            // Load full list data with items
-            const fullList = await alfredAPI.getList(listId);
-            this.currentList = fullList;
-
-            // Update UI
-            this.updateListHeader(fullList);
-            UI.showListView(listId);
-            
-            // Load items for this list
-            await itemsManager.loadItems(listId);
-
+            const list = await alfredAPI.getList(listId);
+            this.currentList = list;
+            this.showListView();
         } catch (error) {
-            console.error('Failed to select list:', error);
-            UI.showError('Impossible de charger la liste');
+            console.error('Erreur ouverture liste:', error);
+            this.showMessage('Erreur lors de l\'ouverture de la liste', 'error');
         }
     }
 
     /**
-     * Update list header
+     * Afficher la vue liste
      */
-    updateListHeader(list) {
-        UI.updateText('list-title', list.name);
-        
-        const itemCount = list.items ? list.items.length : 0;
-        const checkedCount = list.items ? list.items.filter(item => item.is_checked).length : 0;
-        
-        UI.updateText('list-item-count', `${itemCount} article${itemCount !== 1 ? 's' : ''}`);
-        UI.updateText('list-checked-count', `${checkedCount} coché${checkedCount !== 1 ? 's' : ''}`);
-    }
-
-    /**
-     * Show create list modal
-     */
-    showCreateModal() {
-        console.log('showCreateModal called'); // Debug
-        this.showModal('list-modal', 'Nouvelle liste');
-        document.getElementById('list-name').value = '';
-        document.getElementById('list-description').value = '';
-        document.getElementById('list-type').value = 'shopping';
-        document.getElementById('list-private').checked = true;
-        document.querySelector('#list-modal').removeAttribute('data-list-id');
-    }
-
-    /**
-     * Show edit list modal
-     */
-    showEditModal(listData = null) {
-        UI.showModal('list-modal', listData || this.currentList);
-    }
-
-    /**
-     * Handle list form submission
-     */
-    async handleListSubmit(event) {
-        event.preventDefault();
-        
-        const form = event.target;
-        const formData = new FormData(form);
-        const modal = form.closest('.modal');
-        const listId = modal.dataset.listId;
-        
-        const listData = {
-            name: document.getElementById('list-name').value,
-            description: document.getElementById('list-description').value || '',
-            list_type: document.getElementById('list-type').value,
-            is_private: document.getElementById('list-private').checked
-        };
-
-        try {
-            if (listId) {
-                // Update existing list
-                await alfredAPI.updateList(listId, listData);
-                UI.showSuccess('Liste modifiée avec succès');
-                
-                // Update current list if it's the one being edited
-                if (this.currentList && this.currentList.id == listId) {
-                    this.currentList = { ...this.currentList, ...listData };
-                    this.updateListHeader(this.currentList);
-                }
-            } else {
-                // Create new list
-                const newList = await alfredAPI.createList(listData);
-                UI.showSuccess('Liste créée avec succès');
-                
-                // Add to lists array
-                this.lists.unshift(newList);
-                
-                // Select the new list
-                await this.selectList(newList.id);
-            }
-
-            // Refresh lists display
-            this.renderLists();
-            this.hideModal('list-modal');
-
-        } catch (error) {
-            console.error('List operation failed:', error);
-            UI.showError('Impossible de sauvegarder la liste');
-        }
-    }
-
-    /**
-     * Show list menu
-     */
-    showListMenu(listId, event) {
-        event.stopPropagation();
-        
-        const list = this.lists.find(l => l.id === listId);
-        if (!list) return;
-
-        // Create context menu (simplified for now)
-        const actions = [
-            { label: 'Modifier', action: () => this.showEditModal(list) },
-            { label: 'Dupliquer', action: () => this.duplicateList(listId) },
-            { label: 'Partager', action: () => sharingManager.showShareModal(list) },
-            { label: '---', action: null },
-            { label: 'Archiver', action: () => this.archiveList(listId), style: 'warning' },
-            { label: 'Supprimer', action: () => this.deleteList(listId), style: 'danger' }
-        ];
-
-        this.showContextMenu(event, actions);
-    }
-
-    /**
-     * Show context menu (simplified implementation)
-     */
-    showContextMenu(event, actions) {
-        // For now, just show first few actions as confirm dialogs
-        // In a full implementation, you'd create a proper context menu
-        const action = prompt('Action: 1=Modifier, 2=Dupliquer, 3=Partager, 4=Supprimer');
-        
-        switch(action) {
-            case '1':
-                actions[0].action();
-                break;
-            case '2':
-                actions[1].action();
-                break;
-            case '3':
-                actions[2].action();
-                break;
-            case '4':
-                actions[5].action();
-                break;
-        }
-    }
-
-    /**
-     * Duplicate a list
-     */
-    async duplicateList(listId) {
-        try {
-            const name = prompt('Nom de la copie:');
-            if (!name) return;
-
-            const duplicatedList = await alfredAPI.duplicateList(listId, name);
-            UI.showSuccess('Liste dupliquée avec succès');
-            
-            this.lists.unshift(duplicatedList);
-            this.renderLists();
-            await this.selectList(duplicatedList.id);
-
-        } catch (error) {
-            console.error('Failed to duplicate list:', error);
-            UI.showError('Impossible de dupliquer la liste');
-        }
-    }
-
-    /**
-     * Archive a list
-     */
-    async archiveList(listId) {
-        if (!confirm('Êtes-vous sûr de vouloir archiver cette liste ?')) {
-            return;
-        }
-
-        try {
-            await alfredAPI.archiveList(listId);
-            UI.showSuccess('Liste archivée avec succès');
-            
-            // Remove from current lists
-            this.lists = this.lists.filter(l => l.id !== listId);
-            this.renderLists();
-            
-            // If this was the current list, show welcome screen
-            if (this.currentList?.id === listId) {
-                this.currentList = null;
-                if (this.lists.length > 0) {
-                    await this.selectList(this.lists[0].id);
-                } else {
-                    UI.showWelcomeScreen();
-                }
-            }
-
-        } catch (error) {
-            console.error('Failed to archive list:', error);
-            UI.showError('Impossible d\'archiver la liste');
-        }
-    }
-
-    /**
-     * Delete a list
-     */
-    async deleteList(listId) {
-        if (!confirm('Êtes-vous sûr de vouloir supprimer définitivement cette liste ? Cette action est irréversible.')) {
-            return;
-        }
-
-        try {
-            await alfredAPI.deleteList(listId);
-            UI.showSuccess('Liste supprimée avec succès');
-            
-            // Remove from current lists
-            this.lists = this.lists.filter(l => l.id !== listId);
-            this.renderLists();
-            
-            // If this was the current list, show welcome screen
-            if (this.currentList?.id === listId) {
-                this.currentList = null;
-                if (this.lists.length > 0) {
-                    await this.selectList(this.lists[0].id);
-                } else {
-                    UI.showWelcomeScreen();
-                }
-            }
-
-        } catch (error) {
-            console.error('Failed to delete list:', error);
-            UI.showError('Impossible de supprimer la liste');
-        }
-    }
-
-    /**
-     * Show list options
-     */
-    showListOptions() {
+    showListView() {
         if (!this.currentList) return;
-        this.showEditModal();
+
+        // Cacher la vue listes, montrer la vue liste
+        document.getElementById('lists-view').style.display = 'none';
+        document.getElementById('list-view').style.display = 'block';
+
+        // Centrer le header (plus de bouton à masquer)
+        document.querySelector('.app-header').classList.add('centered');
+
+        // Mettre à jour le titre
+        document.getElementById('current-list-name').textContent = this.currentList.name;
+
+        // Afficher les éléments
+        this.renderItems();
     }
 
     /**
-     * Get current list
+     * Fermer la vue liste
      */
-    getCurrentList() {
-        return this.currentList;
-    }
-
-    /**
-     * Refresh current list
-     */
-    async refreshCurrentList() {
-        if (this.currentList) {
-            await this.selectList(this.currentList.id);
-        }
-    }
-
-    /**
-     * Escape HTML to prevent XSS
-     */
-    escapeHtml(text) {
-        const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        };
-        return text.replace(/[&<>"']/g, (m) => map[m]);
-    }
-
-    /**
-     * Show create modal
-     */
-    showCreateModal() {
-        this.showModal('list-modal', 'Nouvelle liste');
-        document.getElementById('list-name').value = '';
-        document.getElementById('list-description').value = '';
-        document.getElementById('list-type').value = 'shopping';
-        document.getElementById('list-private').checked = true;
-        document.querySelector('#list-modal').removeAttribute('data-list-id');
-    }
-
-    /**
-     * Show edit modal
-     */
-    showEditModal(list = null) {
-        const listToEdit = list || this.currentList;
-        if (!listToEdit) return;
-
-        this.showModal('list-modal', 'Modifier la liste');
-        document.getElementById('list-name').value = listToEdit.name;
-        document.getElementById('list-description').value = listToEdit.description || '';
-        document.getElementById('list-type').value = listToEdit.list_type || 'shopping';
-        document.getElementById('list-private').checked = listToEdit.is_private;
-        document.querySelector('#list-modal').setAttribute('data-list-id', listToEdit.id);
-    }
-
-    /**
-     * Show modal
-     */
-    showModal(modalId, title = '') {
-        const modal = document.getElementById(modalId);
-        if (!modal) return;
-
-        const titleElement = modal.querySelector('.modal-title');
-        if (titleElement && title) {
-            titleElement.textContent = title;
-        }
-
-        modal.style.display = 'flex';
-    }
-
-    /**
-     * Hide modal
-     */
-    hideModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (!modal) return;
-
-        modal.style.display = 'none';
-    }
-
-    /**
-     * Show lists loading state
-     */
-    showListsLoading() {
-        const loading = document.getElementById('lists-loading');
-        const empty = document.getElementById('lists-empty');
-        const list = document.getElementById('lists-list');
+    closeListView() {
+        document.getElementById('list-view').style.display = 'none';
+        document.getElementById('lists-view').style.display = 'block';
         
-        if (loading) loading.style.display = 'block';
-        if (empty) empty.style.display = 'none';
-        if (list) list.style.display = 'none';
-    }
-
-    /**
-     * Show lists empty state
-     */
-    showListsEmpty() {
-        const loading = document.getElementById('lists-loading');
-        const empty = document.getElementById('lists-empty');
-        const list = document.getElementById('lists-list');
+        // Décentrer le header
+        document.querySelector('.app-header').classList.remove('centered');
         
-        if (loading) loading.style.display = 'none';
-        if (empty) empty.style.display = 'block';
-        if (list) list.style.display = 'none';
+        this.currentList = null;
+        this.clearAddItemForm();
+        
+        // Recharger les listes pour mettre à jour les compteurs
+        this.loadLists();
     }
 
     /**
-     * Show welcome screen
+     * Afficher les éléments de la liste
      */
-    showWelcomeScreen() {
-        const mainContent = document.getElementById('main-content');
-        if (mainContent) {
-            mainContent.innerHTML = `
-                <div class="welcome-screen">
-                    <h2>Bienvenue dans Alfred !</h2>
-                    <p>Créez une nouvelle liste ou sélectionnez une liste existante pour commencer.</p>
-                    
-                    <div class="quick-actions">
-                        <button class="quick-action-btn primary" id="new-list-quick-welcome">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                            <span>Nouvelle liste</span>
-                        </button>
-                    </div>
+    renderItems() {
+        const container = document.getElementById('items-container');
+        if (!container || !this.currentList) return;
+
+        container.innerHTML = '';
+
+        if (!this.currentList.items || this.currentList.items.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <p>Aucun élément dans cette liste</p>
                 </div>
             `;
-            
-            // Attach event listener to the new button
-            const newListWelcomeBtn = document.getElementById('new-list-quick-welcome');
-            if (newListWelcomeBtn) {
-                newListWelcomeBtn.addEventListener('click', () => this.showCreateModal());
+            return;
+        }
+
+        this.currentList.items.forEach(item => {
+            const itemCard = this.createItemCard(item);
+            container.appendChild(itemCard);
+        });
+    }
+
+    /**
+     * Créer une carte d'élément
+     */
+    createItemCard(item) {
+        const card = document.createElement('div');
+        card.className = 'item-card';
+
+        // Construire le HTML avec les champs optionnels
+        let itemHTML = `
+            <div class="item-content">
+                <input type="checkbox" class="item-checkbox" ${item.is_checked ? 'checked' : ''} />
+                <div class="item-details">
+                    <div class="item-main">
+                        <span class="item-name ${item.is_checked ? 'checked' : ''}">${this.escapeHtml(item.name)}</span>
+                        ${item.quantity ? `<span class="item-quantity">${this.escapeHtml(item.quantity)}</span>` : ''}
+                    </div>
+                    ${item.description ? `<div class="item-description">${this.escapeHtml(item.description)}</div>` : ''}
+                </div>
+                ${item.image_path ? `<img src="/uploads/${item.image_path}" alt="Photo" class="item-photo" />` : ''}
+            </div>
+            <div class="item-actions">
+                <button class="item-remove ${item.is_checked ? 'checked' : ''}" title="Supprimer">✕</button>
+            </div>
+        `;
+
+        card.innerHTML = itemHTML;
+
+        // Event listeners
+        const checkbox = card.querySelector('.item-checkbox');
+        checkbox.addEventListener('change', () => this.toggleItem(item.id, checkbox.checked));
+
+        const removeBtn = card.querySelector('.item-remove');
+        removeBtn.addEventListener('click', () => this.removeItem(item.id));
+
+        return card;
+    }
+
+    /**
+     * Ajouter un élément
+     */
+    async addItem() {
+        const nameInput = document.getElementById('new-item-input');
+        const quantityInput = document.getElementById('new-item-quantity');
+        const commentInput = document.getElementById('new-item-comment');
+        const photoInput = document.getElementById('new-item-photo');
+
+        const itemName = nameInput.value.trim();
+        if (!itemName || !this.currentList) return;
+
+        try {
+            // Préparer les données
+            const itemData = {
+                name: itemName,
+                quantity: quantityInput.value.trim() || null,
+                description: commentInput.value.trim() || null,
+                is_checked: false
+            };
+
+            // Gérer l'upload de photo si présente
+            if (photoInput.files && photoInput.files[0]) {
+                try {
+                    const uploadResponse = await alfredAPI.uploadImage(photoInput.files[0]);
+                    itemData.image_path = uploadResponse.filename;
+                } catch (uploadError) {
+                    console.error('Erreur upload photo:', uploadError);
+                    this.showMessage('Erreur lors de l\'upload de la photo', 'error');
+                    return;
+                }
             }
+
+            const newItem = await alfredAPI.createItem(this.currentList.id, itemData);
+
+            // Ajouter à la liste actuelle
+            if (!this.currentList.items) {
+                this.currentList.items = [];
+            }
+            this.currentList.items.push(newItem);
+
+            // Réafficher et nettoyer
+            this.renderItems();
+            this.clearAddItemForm();
+
+        } catch (error) {
+            console.error('Erreur ajout élément:', error);
+            this.showMessage('Erreur lors de l\'ajout de l\'élément', 'error');
         }
     }
 
     /**
-     * Show error message
+     * Nettoyer le formulaire d'ajout
      */
-    showError(message) {
-        this.showToast(message, 'error');
+    clearAddItemForm() {
+        document.getElementById('new-item-input').value = '';
+        document.getElementById('new-item-quantity').value = '';
+        document.getElementById('new-item-comment').value = '';
+        document.getElementById('new-item-photo').value = '';
     }
 
     /**
-     * Show success message
+     * Gérer la sélection de photo
      */
-    showSuccess(message) {
-        this.showToast(message, 'success');
+    handlePhotoSelect(event) {
+        const file = event.target.files[0];
+        if (file) {
+            // Optionnel: montrer un aperçu ou le nom du fichier sélectionné
+            console.log('Photo sélectionnée:', file.name);
+        }
     }
 
     /**
-     * Show toast notification
+     * Basculer l'état coché d'un élément
      */
-    showToast(message, type = 'info') {
-        const container = document.getElementById('toast-container') || this.createToastContainer();
-        
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.textContent = message;
-        
-        container.appendChild(toast);
-        
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.parentNode.removeChild(toast);
+    async toggleItem(itemId, checked) {
+        try {
+            await alfredAPI.toggleItemCheck(itemId, checked);
+            
+            // Mettre à jour localement
+            const item = this.currentList.items.find(i => i.id === itemId);
+            if (item) {
+                item.is_checked = checked;
+                this.renderItems();
             }
-        }, 5000);
+
+        } catch (error) {
+            console.error('Erreur toggle élément:', error);
+            this.showMessage('Erreur lors de la mise à jour', 'error');
+        }
     }
 
     /**
-     * Create toast container if it doesn't exist
+     * Supprimer un élément
      */
-    createToastContainer() {
-        const container = document.createElement('div');
-        container.id = 'toast-container';
-        document.body.appendChild(container);
-        return container;
+    async removeItem(itemId) {
+        try {
+            await alfredAPI.deleteItem(itemId);
+
+            // Retirer de la liste locale
+            this.currentList.items = this.currentList.items.filter(item => item.id !== itemId);
+            this.renderItems();
+
+        } catch (error) {
+            console.error('Erreur suppression élément:', error);
+            this.showMessage('Erreur lors de la suppression', 'error');
+        }
+    }
+
+    /**
+     * Afficher le modal de création
+     */
+    showCreateModal() {
+        document.getElementById('create-list-modal').style.display = 'flex';
+        document.getElementById('list-name-input').focus();
+    }
+
+    /**
+     * Masquer le modal de création
+     */
+    hideCreateModal() {
+        document.getElementById('create-list-modal').style.display = 'none';
+        document.getElementById('list-name-input').value = '';
+        document.getElementById('list-type-input').value = 'shopping';
+    }
+
+    /**
+     * Gérer la création de liste
+     */
+    async handleCreateList(event) {
+        event.preventDefault();
+
+        const name = document.getElementById('list-name-input').value.trim();
+        const type = document.getElementById('list-type-input').value;
+
+        if (!name) return;
+
+        try {
+            const newList = await alfredAPI.createList({
+                name: name,
+                list_type: type,
+                description: '',
+                is_private: true
+            });
+
+            // Ajouter à la liste locale
+            this.lists.unshift(newList);
+            this.renderLists();
+            this.hideCreateModal();
+            this.showMessage('Liste créée avec succès', 'success');
+
+        } catch (error) {
+            console.error('Erreur création liste:', error);
+            this.showMessage('Erreur lors de la création de la liste', 'error');
+        }
+    }
+
+    /**
+     * Supprimer la liste actuelle
+     */
+    async deleteCurrentList() {
+        if (!this.currentList) return;
+
+        if (!confirm(`Êtes-vous sûr de vouloir supprimer la liste "${this.currentList.name}" ?`)) {
+            return;
+        }
+
+        try {
+            await alfredAPI.deleteList(this.currentList.id);
+
+            // Retirer de la liste locale
+            this.lists = this.lists.filter(list => list.id !== this.currentList.id);
+            
+            this.closeListView();
+            this.renderLists();
+            this.showMessage('Liste supprimée', 'success');
+
+        } catch (error) {
+            console.error('Erreur suppression liste:', error);
+            this.showMessage('Erreur lors de la suppression', 'error');
+        }
+    }
+
+    /**
+     * Afficher un message
+     */
+    showMessage(text, type = 'info') {
+        // Retirer les anciens messages
+        const existingMessages = document.querySelectorAll('.message');
+        existingMessages.forEach(msg => msg.remove());
+
+        const message = document.createElement('div');
+        message.className = `message ${type}`;
+        message.textContent = text;
+
+        const main = document.querySelector('.app-main');
+        main.insertBefore(message, main.firstChild);
+
+        // Auto-retirer après 3 secondes
+        setTimeout(() => {
+            if (message.parentNode) {
+                message.remove();
+            }
+        }, 3000);
+    }
+
+    /**
+     * Échapper le HTML
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 }
 
-// Create global lists manager instance
-window.listsManager = new ListsManager();
+// Instance globale
+const listsManager = new ListsManager();

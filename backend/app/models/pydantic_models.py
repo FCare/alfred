@@ -9,12 +9,10 @@ from enum import Enum
 
 class ListType(str, Enum):
     """Types de listes supportées"""
-    SHOPPING = "shopping"
-    TODO = "todo"
-    NOTES = "notes"
-    CHECKLIST = "checklist"
-    WISHLIST = "wishlist"
-    INVENTORY = "inventory"
+    shopping = "shopping"
+    todo = "todo"
+    wishlist = "wishlist"
+    inventory = "inventory"
 
 
 class PermissionLevel(str, Enum):
@@ -43,6 +41,7 @@ class ListItemBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="Item name")
     quantity: Optional[str] = Field(None, max_length=100, description="Quantity (e.g., '2 kg', '1 box')")
     description: Optional[str] = Field(None, description="Item description")
+    image_path: Optional[str] = Field(None, max_length=500, description="Path to item image")
     is_checked: bool = Field(False, description="Whether item is checked")
     position: int = Field(0, description="Item position in list")
 
@@ -57,6 +56,7 @@ class ListItemUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     quantity: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = Field(None)
+    image_path: Optional[str] = Field(None, max_length=500)
     is_checked: Optional[bool] = None
     position: Optional[int] = None
 
@@ -78,7 +78,7 @@ class ListBase(BaseModel):
     """Base model for lists"""
     name: str = Field(..., min_length=1, max_length=255, description="List name")
     description: Optional[str] = Field(None, description="List description")
-    list_type: ListType = Field(ListType.SHOPPING, description="Type of list")
+    list_type: ListType = Field(ListType.shopping, description="Type of list")
     is_private: bool = Field(True, description="Whether list is private")
 
 
