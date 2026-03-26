@@ -16,14 +16,14 @@ async def get_current_user(request: Request) -> CurrentUser:
     """
     Dependency to get current authenticated user
     """
-    return await auth_service.require_authentication(request)
+    return await auth_service.get_current_user(request)
 
 
 async def get_optional_user(request: Request) -> Optional[CurrentUser]:
     """
     Dependency to get current user if authenticated (optional)
     """
-    return await auth_service.verify_session(request)
+    return await auth_service.get_current_user(request)
 
 
 def get_list_with_permission(
