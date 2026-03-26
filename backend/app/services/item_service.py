@@ -85,6 +85,7 @@ class ItemService:
             name=item_data.name,
             quantity=item_data.quantity,
             description=item_data.description,
+            image_path=item_data.image_path,
             is_checked=item_data.is_checked,
             position=item_data.position if item_data.position is not None else max_position
         )
@@ -143,6 +144,7 @@ class ItemService:
             "name": item.name,
             "quantity": item.quantity,
             "description": item.description,
+            "image_path": item.image_path,
             "is_checked": item.is_checked,
             "position": item.position
         }
@@ -160,6 +162,10 @@ class ItemService:
         if item_data.description is not None:
             item.description = item_data.description
             changes["description"] = {"old": old_values["description"], "new": item_data.description}
+        
+        if item_data.image_path is not None:
+            item.image_path = item_data.image_path
+            changes["image_path"] = {"old": old_values["image_path"], "new": item_data.image_path}
         
         if item_data.is_checked is not None:
             old_checked = item.is_checked

@@ -273,7 +273,7 @@ class ListsManager {
                     </div>
                     ${item.description ? `<div class="item-description">${this.escapeHtml(item.description)}</div>` : ''}
                 </div>
-                ${item.image_path ? `<img src="/uploads/${item.image_path}" alt="Photo" class="item-photo" />` : ''}
+                ${item.image_path ? `<img src="/api/v1/upload/image/${item.image_path}" alt="Photo" class="item-photo" onclick="listsManager.showImageModal('/api/v1/upload/image/${item.image_path}', '${this.escapeHtml(item.name)}')" />` : ''}
             </div>
             <div class="item-actions">
                 <button class="item-remove ${item.is_checked ? 'checked' : ''}" title="Supprimer">✕</button>
@@ -364,6 +364,17 @@ class ListsManager {
         if (this.currentList) {
             this.adaptInterfaceForListType();
         }
+        
+        // Nettoyer l'aperçu photo
+        const previewDiv = document.getElementById('photo-preview');
+        const photoBtn = document.getElementById('photo-btn');
+        if (previewDiv) {
+            previewDiv.style.display = 'none';
+        }
+        if (photoBtn) {
+            photoBtn.classList.remove('photo-btn-selected');
+            photoBtn.title = 'Ajouter une photo';
+        }
     }
 
     /**
@@ -371,9 +382,27 @@ class ListsManager {
      */
     handlePhotoSelect(event) {
         const file = event.target.files[0];
+        const photoBtn = document.getElementById('photo-btn');
+        const previewDiv = document.getElementById('photo-preview');
+        const previewImg = document.getElementById('preview-image');
+        const previewName = document.getElementById('preview-name');
+        
         if (file) {
-            // Optionnel: montrer un aperçu ou le nom du fichier sélectionné
-            console.log('Photo sélectionnée:', file.name);
+            // Créer un aperçu de la photo
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                previewName.textContent = file.name;
+                previewDiv.style.display = 'block';
+                photoBtn.classList.add('photo-btn-selected');
+                photoBtn.title = `Photo sélectionnée: ${file.name}`;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            // Aucun fichier sélectionné
+            previewDiv.style.display = 'none';
+            photoBtn.classList.remove('photo-btn-selected');
+            photoBtn.title = 'Ajouter une photo';
         }
     }
 
@@ -509,6 +538,55 @@ class ListsManager {
                 message.remove();
             }
         }, 3000);
+    }
+
+    /**
+     * Afficher le modal d'image en grand format
+     */
+    showImageModal(imageSrc, title) {
+        const modal = document.getElementById('image-modal');
+        const modalImage = document.getElementById('modal-image');
+        const imageTitle = document.getElementById('image-title');
+        
+        modalImage.src = imageSrc;
+        imageTitle.textContent = title;
+        modal.style.display = 'flex';
+        
+        // Fermer avec Escape
+        document.addEventListener('keydown', this.handleImageModalKeydown.bind(this));
+        
+        // Fermer en cliquant sur l'arrière-plan
+        modal.addEventListener('click', this.handleImageModalBackdropClick.bind(this));
+    }
+
+    /**
+     * Fermer le modal d'image
+     */
+    hideImageModal() {
+        const modal = document.getElementById('image-modal');
+        modal.style.display = 'none';
+        
+        // Nettoyer les event listeners
+        document.removeEventListener('keydown', this.handleImageModalKeydown.bind(this));
+        modal.removeEventListener('click', this.handleImageModalBackdropClick.bind(this));
+    }
+
+    /**
+     * Gérer la fermeture par touche Escape
+     */
+    handleImageModalKeydown(event) {
+        if (event.key === 'Escape') {
+            this.hideImageModal();
+        }
+    }
+
+    /**
+     * Gérer la fermeture par clic sur l'arrière-plan
+     */
+    handleImageModalBackdropClick(event) {
+        if (event.target.id === 'image-modal') {
+            this.hideImageModal();
+        }
     }
 
     /**

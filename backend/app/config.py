@@ -23,9 +23,6 @@ class Settings(BaseSettings):
         "https://auth.caronboulme.fr"
     ]
     
-    # Security
-    secret_key: str = "alfred-secret-key-change-in-production"
-    
     # Application
     app_name: str = "Alfred - Shopping Lists Manager"
     app_version: str = "1.0.0"
