@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: alfred-backend
     environment:
-      - DATABASE_URL=sqlite:///./alfred.db
+      - DATABASE_URL=sqlite:///./data/alfred.db
       - VOIGHT_KAMPFF_URL=http://voight-kampff:8000
       - SECRET_KEY=your-secret-key-change-in-production
       - UPLOAD_MAX_SIZE=10485760
