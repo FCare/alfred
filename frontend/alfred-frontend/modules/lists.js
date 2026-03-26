@@ -282,7 +282,13 @@ class ListsManager {
      * Show create list modal
      */
     showCreateModal() {
-        UI.showModal('list-modal');
+        console.log('showCreateModal called'); // Debug
+        this.showModal('list-modal', 'Nouvelle liste');
+        document.getElementById('list-name').value = '';
+        document.getElementById('list-description').value = '';
+        document.getElementById('list-type').value = 'shopping';
+        document.getElementById('list-private').checked = true;
+        document.querySelector('#list-modal').removeAttribute('data-list-id');
     }
 
     /**
@@ -602,7 +608,7 @@ class ListsManager {
                     <p>Créez une nouvelle liste ou sélectionnez une liste existante pour commencer.</p>
                     
                     <div class="quick-actions">
-                        <button class="quick-action-btn primary" id="new-list-quick">
+                        <button class="quick-action-btn primary" id="new-list-quick-welcome">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -612,6 +618,12 @@ class ListsManager {
                     </div>
                 </div>
             `;
+            
+            // Attach event listener to the new button
+            const newListWelcomeBtn = document.getElementById('new-list-quick-welcome');
+            if (newListWelcomeBtn) {
+                newListWelcomeBtn.addEventListener('click', () => this.showCreateModal());
+            }
         }
     }
 
