@@ -266,6 +266,7 @@ class ListsManager {
         let itemHTML = `
             <div class="item-content">
                 <input type="checkbox" class="item-checkbox" ${item.is_checked ? 'checked' : ''} />
+                ${item.image_path ? `<img src="/api/v1/upload/image/${item.image_path}" alt="Photo" class="item-photo" onclick="listsManager.showImageModal('/api/v1/upload/image/${item.image_path}', '${this.escapeHtml(item.name)}')" />` : ''}
                 <div class="item-details">
                     <div class="item-main">
                         <span class="item-name ${item.is_checked ? 'checked' : ''}">${this.escapeHtml(item.name)}</span>
@@ -273,7 +274,6 @@ class ListsManager {
                     </div>
                     ${item.description ? `<div class="item-description">${this.escapeHtml(item.description)}</div>` : ''}
                 </div>
-                ${item.image_path ? `<img src="/api/v1/upload/image/${item.image_path}" alt="Photo" class="item-photo" onclick="listsManager.showImageModal('/api/v1/upload/image/${item.image_path}', '${this.escapeHtml(item.name)}')" />` : ''}
             </div>
             <div class="item-actions">
                 <button class="item-remove ${item.is_checked ? 'checked' : ''}" title="Supprimer">✕</button>
