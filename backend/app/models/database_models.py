@@ -1,12 +1,23 @@
 """
 SQLAlchemy database models for Alfred
 """
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, JSON, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from datetime import datetime
+import enum
 
 from ..database import Base
+
+
+class ListType(enum.Enum):
+    """Types de listes supportées"""
+    SHOPPING = "shopping"
+    TODO = "todo"
+    NOTES = "notes"
+    CHECKLIST = "checklist"
+    WISHLIST = "wishlist"
+    INVENTORY = "inventory"
 
 
 class List(Base):
@@ -18,6 +29,7 @@ class List(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False, index=True)
     description = Column(Text, nullable=True)
+    list_type = Column(Enum(ListType), nullable=False, default=ListType.SHOPPING, index=True)
     owner_id = Column(Integer, nullable=False, index=True)  # Référence vers l'utilisateur VK
     owner_username = Column(String(255), nullable=False, index=True)
     is_private = Column(Boolean, default=True, nullable=False)

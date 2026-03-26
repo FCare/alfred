@@ -23,10 +23,12 @@ class ListService:
         db: Session,
         user: schemas.CurrentUser,
         include_shared: bool = True,
-        include_archived: bool = False
+        include_archived: bool = False,
+        list_type: Optional[schemas.ListType] = None
     ) -> ListType[schemas.ListSummary]:
         """
         Get all lists for a user (owned and shared)
+        Optionally filter by list type
         """
         query = db.query(db_models.List)
         
@@ -44,6 +46,10 @@ class ListService:
         else:
             # Only owned lists
             query = query.filter(db_models.List.owner_id == user.user_id)
+        
+        # Filter by list type
+        if list_type:
+            query = query.filter(db_models.List.list_type == list_type)
         
         # Filter archived/unarchived
         if not include_archived:

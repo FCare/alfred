@@ -54,11 +54,16 @@ class AlfredAPI {
     /**
      * Get all lists for the current user
      */
-    async getLists(includeShared = true, archived = false) {
-        const params = new URLSearchParams({ 
-            include_shared: includeShared, 
-            archived 
+    async getLists(includeShared = true, archived = false, listType = null) {
+        const params = new URLSearchParams({
+            include_shared: includeShared,
+            archived
         });
+        
+        if (listType) {
+            params.set('list_type', listType);
+        }
+        
         return this.request(`/lists?${params}`);
     }
 

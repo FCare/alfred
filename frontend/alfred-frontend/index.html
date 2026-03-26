@@ -28,6 +28,32 @@
             </div>
         </header>
 
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3>Mes listes</h3>
+                <div class="list-filters">
+                    <select id="type-filter" class="filter-select">
+                        <option value="">Tous les types</option>
+                        <option value="shopping">🛒 Courses</option>
+                        <option value="todo">✅ Tâches</option>
+                        <option value="notes">📝 Notes</option>
+                        <option value="checklist">☑️ Vérification</option>
+                        <option value="wishlist">🎁 Souhaits</option>
+                        <option value="inventory">📦 Inventaire</option>
+                    </select>
+                </div>
+            </div>
+            <div class="sidebar-content">
+                <div id="lists-loading" style="display: none;">Chargement...</div>
+                <div id="lists-empty" style="display: none;">
+                    <p>Aucune liste pour le moment</p>
+                    <button class="create-first-list-btn">Créer une liste</button>
+                </div>
+                <div id="lists-list" style="display: none;"></div>
+            </div>
+        </div>
+
         <!-- Main Content Area -->
         <div class="chat-container">
             <div id="main-content" class="chat-messages">
@@ -126,6 +152,18 @@
                 <div class="form-group">
                     <label class="form-label" for="list-name">Nom de la liste *</label>
                     <input type="text" class="form-input" id="list-name" required placeholder="Ma liste de courses">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="list-type">Type de liste *</label>
+                    <select class="form-input" id="list-type" required>
+                        <option value="shopping">🛒 Liste de courses</option>
+                        <option value="todo">✅ Liste de tâches</option>
+                        <option value="notes">📝 Notes</option>
+                        <option value="checklist">☑️ Liste de vérification</option>
+                        <option value="wishlist">🎁 Liste de souhaits</option>
+                        <option value="inventory">📦 Inventaire</option>
+                    </select>
                 </div>
 
                 <div class="form-group">

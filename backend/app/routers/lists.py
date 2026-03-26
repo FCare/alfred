@@ -4,7 +4,7 @@ API endpoints for shopping lists management
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import List as ListType
+from typing import List as ListType, Optional
 
 from ..database import get_db
 from ..dependencies import get_current_user, get_list_read_permission, get_list_admin_permission
@@ -21,16 +21,19 @@ async def get_user_lists(
     current_user: schemas.CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
     include_shared: bool = True,
-    archived: bool = False
+    archived: bool = False,
+    list_type: Optional[schemas.ListType] = None
 ):
     """
     Get all lists for the current user (owned + shared)
+    Optionally filter by list type
     """
     return await list_service.get_user_lists(
         db=db,
         user=current_user,
         include_shared=include_shared,
-        include_archived=archived
+        include_archived=archived,
+        list_type=list_type
     )
 
 

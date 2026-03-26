@@ -7,6 +7,16 @@ from datetime import datetime
 from enum import Enum
 
 
+class ListType(str, Enum):
+    """Types de listes supportées"""
+    SHOPPING = "shopping"
+    TODO = "todo"
+    NOTES = "notes"
+    CHECKLIST = "checklist"
+    WISHLIST = "wishlist"
+    INVENTORY = "inventory"
+
+
 class PermissionLevel(str, Enum):
     """Permission levels for list sharing"""
     READ = "read"
@@ -68,6 +78,7 @@ class ListBase(BaseModel):
     """Base model for lists"""
     name: str = Field(..., min_length=1, max_length=255, description="List name")
     description: Optional[str] = Field(None, description="List description")
+    list_type: ListType = Field(ListType.SHOPPING, description="Type of list")
     is_private: bool = Field(True, description="Whether list is private")
 
 
@@ -80,6 +91,7 @@ class ListUpdate(BaseModel):
     """Model for updating a list"""
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
+    list_type: Optional[ListType] = None
     is_private: Optional[bool] = None
 
 

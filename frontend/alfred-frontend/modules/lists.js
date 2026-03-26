@@ -8,6 +8,7 @@ class ListsManager {
         this.currentList = null;
         this.sortBy = 'updated_at';
         this.sortOrder = 'desc';
+        this.currentTypeFilter = '';
     }
 
     /**
@@ -22,14 +23,22 @@ class ListsManager {
      * Setup event listeners
      */
     setupEventListeners() {
-        // Create list buttons
-        UI.addEventListener('create-list-btn', 'click', () => this.showCreateModal());
-        UI.addEventListener('welcome-create-list', 'click', () => this.showCreateModal());
+        // Create list buttons - use direct DOM access since UI.addEventListener may not exist yet
+        const newListBtn = document.getElementById('new-list-btn');
+        if (newListBtn) {
+            newListBtn.addEventListener('click', () => this.showCreateModal());
+        }
+        
+        const newListQuick = document.getElementById('new-list-quick');
+        if (newListQuick) {
+            newListQuick.addEventListener('click', () => this.showCreateModal());
+        }
         
         // Handle first list creation button in empty state
-        const createFirstListBtns = document.querySelectorAll('.create-first-list-btn');
-        createFirstListBtns.forEach(btn => {
-            btn.addEventListener('click', () => this.showCreateModal());
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('create-first-list-btn')) {
+                this.showCreateModal();
+            }
         });
 
         // List form submission
@@ -38,8 +47,33 @@ class ListsManager {
             listForm.addEventListener('submit', (e) => this.handleListSubmit(e));
         }
 
+        // Type filter
+        const typeFilter = document.getElementById('type-filter');
+        if (typeFilter) {
+            typeFilter.addEventListener('change', (e) => this.filterByType(e.target.value));
+        }
+
         // List options menu
         UI.addEventListener('list-options-btn', 'click', () => this.showListOptions());
+    }
+
+    /**
+     * Filter lists by type
+     */
+    async filterByType(type) {
+        this.currentTypeFilter = type;
+        
+        // Reload lists from server with filter
+        try {
+            UI.showListsLoading();
+            const lists = await alfredAPI.getLists(true, false, type);
+            this.lists = lists || [];
+            this.renderLists();
+        } catch (error) {
+            console.error('Failed to filter lists:', error);
+            UI.showError('Impossible de filtrer les listes');
+            this.renderLists(); // Fallback to client-side filtering
+        }
     }
 
     /**
@@ -53,8 +87,8 @@ class ListsManager {
             this.lists = lists || [];
             
             if (this.lists.length === 0) {
-                UI.showListsEmpty();
-                UI.showWelcomeScreen();
+                this.showListsEmpty();
+                this.showWelcomeScreen();
             } else {
                 this.renderLists();
                 
@@ -65,8 +99,8 @@ class ListsManager {
             }
         } catch (error) {
             console.error('Failed to load lists:', error);
-            UI.showError('Impossible de charger les listes');
-            UI.showListsEmpty();
+            this.showError('Impossible de charger les listes');
+            this.showListsEmpty();
         }
     }
 
@@ -79,8 +113,17 @@ class ListsManager {
 
         container.innerHTML = '';
 
-        // Sort lists
-        const sortedLists = this.getSortedLists();
+        // Filter and sort lists
+        let filteredLists = this.lists;
+        
+        // Apply type filter
+        if (this.currentTypeFilter) {
+            filteredLists = filteredLists.filter(list =>
+                list.list_type === this.currentTypeFilter
+            );
+        }
+        
+        const sortedLists = this.getSortedLists(filteredLists);
 
         sortedLists.forEach(list => {
             const listElement = this.createListElement(list);
@@ -103,10 +146,17 @@ class ListsManager {
         const progress = list.item_count > 0 ? Math.round((list.checked_count / list.item_count) * 100) : 0;
         const progressText = list.item_count > 0 ? `${list.checked_count}/${list.item_count}` : 'Vide';
 
+        // Get list type info
+        const typeInfo = this.getListTypeInfo(list.list_type || 'shopping');
+
         div.innerHTML = `
             <div class="list-item-info">
-                <h4>${this.escapeHtml(list.name)}</h4>
+                <div class="list-item-header">
+                    <span class="list-type-icon">${typeInfo.icon}</span>
+                    <h4>${this.escapeHtml(list.name)}</h4>
+                </div>
                 <div class="list-item-meta">
+                    <span class="list-type-label">${typeInfo.label}</span>
                     <span>${progressText}</span>
                     ${progress > 0 ? `<span>${progress}% terminé</span>` : ''}
                 </div>
@@ -144,10 +194,27 @@ class ListsManager {
     }
 
     /**
+     * Get list type information
+     */
+    getListTypeInfo(listType) {
+        const types = {
+            shopping: { icon: '🛒', label: 'Courses' },
+            todo: { icon: '✅', label: 'Tâches' },
+            notes: { icon: '📝', label: 'Notes' },
+            checklist: { icon: '☑️', label: 'Vérification' },
+            wishlist: { icon: '🎁', label: 'Souhaits' },
+            inventory: { icon: '📦', label: 'Inventaire' }
+        };
+        
+        return types[listType] || types.shopping;
+    }
+
+    /**
      * Get sorted lists
      */
-    getSortedLists() {
-        return [...this.lists].sort((a, b) => {
+    getSortedLists(listsArray = null) {
+        const lists = listsArray || this.lists;
+        return [...lists].sort((a, b) => {
             let aValue = a[this.sortBy];
             let bValue = b[this.sortBy];
 
@@ -237,9 +304,10 @@ class ListsManager {
         const listId = modal.dataset.listId;
         
         const listData = {
-            name: formData.get('name'),
-            description: formData.get('description') || '',
-            is_private: formData.has('is_private')
+            name: document.getElementById('list-name').value,
+            description: document.getElementById('list-description').value || '',
+            list_type: document.getElementById('list-type').value,
+            is_private: document.getElementById('list-private').checked
         };
 
         try {
@@ -267,7 +335,7 @@ class ListsManager {
 
             // Refresh lists display
             this.renderLists();
-            UI.hideModal('list-modal');
+            this.hideModal('list-modal');
 
         } catch (error) {
             console.error('List operation failed:', error);
@@ -442,6 +510,153 @@ class ListsManager {
             "'": '&#039;'
         };
         return text.replace(/[&<>"']/g, (m) => map[m]);
+    }
+
+    /**
+     * Show create modal
+     */
+    showCreateModal() {
+        this.showModal('list-modal', 'Nouvelle liste');
+        document.getElementById('list-name').value = '';
+        document.getElementById('list-description').value = '';
+        document.getElementById('list-type').value = 'shopping';
+        document.getElementById('list-private').checked = true;
+        document.querySelector('#list-modal').removeAttribute('data-list-id');
+    }
+
+    /**
+     * Show edit modal
+     */
+    showEditModal(list = null) {
+        const listToEdit = list || this.currentList;
+        if (!listToEdit) return;
+
+        this.showModal('list-modal', 'Modifier la liste');
+        document.getElementById('list-name').value = listToEdit.name;
+        document.getElementById('list-description').value = listToEdit.description || '';
+        document.getElementById('list-type').value = listToEdit.list_type || 'shopping';
+        document.getElementById('list-private').checked = listToEdit.is_private;
+        document.querySelector('#list-modal').setAttribute('data-list-id', listToEdit.id);
+    }
+
+    /**
+     * Show modal
+     */
+    showModal(modalId, title = '') {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+
+        const titleElement = modal.querySelector('.modal-title');
+        if (titleElement && title) {
+            titleElement.textContent = title;
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    /**
+     * Hide modal
+     */
+    hideModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+
+        modal.style.display = 'none';
+    }
+
+    /**
+     * Show lists loading state
+     */
+    showListsLoading() {
+        const loading = document.getElementById('lists-loading');
+        const empty = document.getElementById('lists-empty');
+        const list = document.getElementById('lists-list');
+        
+        if (loading) loading.style.display = 'block';
+        if (empty) empty.style.display = 'none';
+        if (list) list.style.display = 'none';
+    }
+
+    /**
+     * Show lists empty state
+     */
+    showListsEmpty() {
+        const loading = document.getElementById('lists-loading');
+        const empty = document.getElementById('lists-empty');
+        const list = document.getElementById('lists-list');
+        
+        if (loading) loading.style.display = 'none';
+        if (empty) empty.style.display = 'block';
+        if (list) list.style.display = 'none';
+    }
+
+    /**
+     * Show welcome screen
+     */
+    showWelcomeScreen() {
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+            mainContent.innerHTML = `
+                <div class="welcome-screen">
+                    <h2>Bienvenue dans Alfred !</h2>
+                    <p>Créez une nouvelle liste ou sélectionnez une liste existante pour commencer.</p>
+                    
+                    <div class="quick-actions">
+                        <button class="quick-action-btn primary" id="new-list-quick">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            <span>Nouvelle liste</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    /**
+     * Show error message
+     */
+    showError(message) {
+        this.showToast(message, 'error');
+    }
+
+    /**
+     * Show success message
+     */
+    showSuccess(message) {
+        this.showToast(message, 'success');
+    }
+
+    /**
+     * Show toast notification
+     */
+    showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container') || this.createToastContainer();
+        
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        
+        container.appendChild(toast);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 5000);
+    }
+
+    /**
+     * Create toast container if it doesn't exist
+     */
+    createToastContainer() {
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+        return container;
     }
 }
 
