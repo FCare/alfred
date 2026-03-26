@@ -230,6 +230,15 @@ body {
     margin-bottom: 20px;
 }
 
+/* Layout pour les listes todo (sans quantité) */
+.add-item.todo-layout {
+    grid-template-columns: 2fr 2fr auto auto;
+}
+
+.add-item.todo-layout #new-item-quantity {
+    display: none;
+}
+
 .add-item input[type="text"] {
     padding: 10px;
     border: 1px solid #d1d5db;

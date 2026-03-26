@@ -9,7 +9,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./alfred.db
+      - DATABASE_URL=sqlite:///./data/alfred.db
       - SECRET_KEY=your-secret-key-change-in-production
       - UPLOAD_MAX_SIZE=10485760
       - UPLOAD_ALLOWED_EXTENSIONS=jpg,jpeg,png,gif,webp

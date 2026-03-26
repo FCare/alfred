@@ -17,8 +17,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY app/ ./app/
 
-# Create uploads directory
-RUN mkdir -p uploads
+# Create uploads and data directories
+RUN mkdir -p uploads data
 
 # Create non-root user for security
 RUN adduser --disabled-password --gecos '' --uid 1000 appuser && \

@@ -171,8 +171,44 @@ class ListsManager {
         // Mettre à jour le titre
         document.getElementById('current-list-name').textContent = this.currentList.name;
 
+        // Adapter l'interface selon le type de liste
+        this.adaptInterfaceForListType();
+
         // Afficher les éléments
         this.renderItems();
+    }
+
+    /**
+     * Adapter l'interface selon le type de liste
+     */
+    adaptInterfaceForListType() {
+        const listType = this.currentList.list_type;
+        const addItemDiv = document.querySelector('.add-item');
+        const quantityInput = document.getElementById('new-item-quantity');
+        const nameInput = document.getElementById('new-item-input');
+        const commentInput = document.getElementById('new-item-comment');
+        
+        if (listType === 'todo') {
+            // Pour les todos : appliquer layout spécial et adapter placeholders
+            addItemDiv.classList.add('todo-layout');
+            nameInput.placeholder = 'Nouvelle tâche...';
+            commentInput.placeholder = 'Description (optionnel)';
+        } else {
+            // Pour shopping/wishlist/inventory : layout normal
+            addItemDiv.classList.remove('todo-layout');
+            quantityInput.style.display = 'block';
+            nameInput.placeholder = 'Nom de l\'élément...';
+            commentInput.placeholder = 'Commentaire (optionnel)';
+            
+            // Adapter le placeholder de quantité selon le type
+            if (listType === 'shopping') {
+                quantityInput.placeholder = 'Quantité (ex: 2 kg)';
+            } else if (listType === 'inventory') {
+                quantityInput.placeholder = 'Quantité en stock';
+            } else {
+                quantityInput.placeholder = 'Quantité (optionnel)';
+            }
+        }
     }
 
     /**
@@ -223,14 +259,17 @@ class ListsManager {
         const card = document.createElement('div');
         card.className = 'item-card';
 
-        // Construire le HTML avec les champs optionnels
+        const listType = this.currentList.list_type;
+        const showQuantity = listType !== 'todo' && item.quantity;
+
+        // Construire le HTML avec les champs optionnels selon le type
         let itemHTML = `
             <div class="item-content">
                 <input type="checkbox" class="item-checkbox" ${item.is_checked ? 'checked' : ''} />
                 <div class="item-details">
                     <div class="item-main">
                         <span class="item-name ${item.is_checked ? 'checked' : ''}">${this.escapeHtml(item.name)}</span>
-                        ${item.quantity ? `<span class="item-quantity">${this.escapeHtml(item.quantity)}</span>` : ''}
+                        ${showQuantity ? `<span class="item-quantity">${this.escapeHtml(item.quantity)}</span>` : ''}
                     </div>
                     ${item.description ? `<div class="item-description">${this.escapeHtml(item.description)}</div>` : ''}
                 </div>
@@ -266,13 +305,21 @@ class ListsManager {
         if (!itemName || !this.currentList) return;
 
         try {
-            // Préparer les données
+            // Préparer les données selon le type de liste
+            const listType = this.currentList.list_type;
             const itemData = {
                 name: itemName,
-                quantity: quantityInput.value.trim() || null,
                 description: commentInput.value.trim() || null,
                 is_checked: false
             };
+
+            // Ajouter la quantité seulement si ce n'est pas une todo et qu'elle est renseignée
+            if (listType !== 'todo') {
+                const quantity = quantityInput.value.trim();
+                if (quantity) {
+                    itemData.quantity = quantity;
+                }
+            }
 
             // Gérer l'upload de photo si présente
             if (photoInput.files && photoInput.files[0]) {
@@ -312,6 +359,11 @@ class ListsManager {
         document.getElementById('new-item-quantity').value = '';
         document.getElementById('new-item-comment').value = '';
         document.getElementById('new-item-photo').value = '';
+        
+        // Réapplique l'adaptation de l'interface (au cas où le type aurait changé)
+        if (this.currentList) {
+            this.adaptInterfaceForListType();
+        }
     }
 
     /**
