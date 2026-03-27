@@ -353,9 +353,14 @@ class ListsManager {
                     this.showMessage('Erreur lors de l\'upload de la photo', 'error');
                     return;
                 }
-            } else if (isEditing && addBtn.dataset.existingImagePath) {
-                // En mode édition, si pas de nouvelle photo, garder l'existante
-                itemData.image_path = addBtn.dataset.existingImagePath;
+            } else if (isEditing) {
+                if (addBtn.dataset.removeImage === 'true') {
+                    // L'utilisateur a demandé la suppression de la photo
+                    itemData.image_path = null;
+                } else if (addBtn.dataset.existingImagePath) {
+                    // Garder l'image existante
+                    itemData.image_path = addBtn.dataset.existingImagePath;
+                }
             }
 
             let resultItem;
@@ -412,6 +417,7 @@ class ListsManager {
         addBtn.className = 'btn btn-icon';
         delete addBtn.dataset.editingId;
         delete addBtn.dataset.existingImagePath;
+        delete addBtn.dataset.removeImage;
         
         // Masquer le bouton d'annulation
         if (cancelBtn) {
@@ -537,16 +543,63 @@ class ListsManager {
 
         // Afficher la photo existante si elle existe
         if (item.image_path && previewDiv && previewImg && previewName) {
+            // Créer conteneur avec bouton de suppression
+            const container = document.createElement('div');
+            container.className = 'photo-preview-container';
+            
+            // Créer bouton de suppression
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'photo-delete-btn';
+            deleteBtn.innerHTML = '🗑️';
+            deleteBtn.title = 'Supprimer la photo';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.removePhotoFromEdit();
+            };
+            
             previewImg.src = `/api/v1/upload/image/${item.image_path}`;
             previewName.textContent = 'Photo actuelle (cliquer pour changer)';
+            
+            // Restructurer le DOM
+            previewDiv.innerHTML = '';
+            container.appendChild(previewImg);
+            container.appendChild(deleteBtn);
+            previewDiv.appendChild(container);
+            previewDiv.appendChild(previewName);
             previewDiv.style.display = 'block';
+            
             photoBtn.classList.add('photo-btn-selected');
             photoBtn.title = 'Photo actuelle - cliquer pour changer';
+            
+            // Ajouter clic pour affichage en taille réelle
+            previewImg.style.cursor = 'pointer';
+            previewImg.onclick = () => this.showImageModal(`/api/v1/upload/image/${item.image_path}`, item.name);
         }
 
         // Scroll vers le formulaire
         document.querySelector('.add-item').scrollIntoView({ behavior: 'smooth' });
         nameInput.focus();
+    }
+
+    /**
+     * Supprimer la photo en mode édition
+     */
+    removePhotoFromEdit() {
+        const addBtn = document.getElementById('add-item-btn');
+        const previewDiv = document.getElementById('photo-preview');
+        const photoBtn = document.getElementById('photo-btn');
+        
+        // Marquer la photo comme supprimée
+        addBtn.dataset.removeImage = 'true';
+        delete addBtn.dataset.existingImagePath;
+        
+        // Masquer l'aperçu
+        previewDiv.style.display = 'none';
+        previewDiv.innerHTML = '';
+        
+        // Restaurer le bouton photo
+        photoBtn.classList.remove('photo-btn-selected');
+        photoBtn.title = 'Ajouter une photo';
     }
 
     /**
