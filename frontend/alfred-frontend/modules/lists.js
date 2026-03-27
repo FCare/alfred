@@ -408,7 +408,8 @@ class ListsManager {
         const addBtn = document.getElementById('add-item-btn');
         const cancelBtn = document.getElementById('cancel-edit-btn');
         
-        addBtn.textContent = 'Ajouter';
+        addBtn.innerHTML = '+';
+        addBtn.className = 'btn btn-icon';
         delete addBtn.dataset.editingId;
         delete addBtn.dataset.existingImagePath;
         
@@ -520,7 +521,8 @@ class ListsManager {
         commentInput.value = item.description || '';
 
         // Changer le bouton et stocker l'ID de l'élément en cours d'édition
-        addBtn.textContent = 'Modifier';
+        addBtn.innerHTML = '✓';
+        addBtn.className = 'btn btn-icon btn-success';
         addBtn.dataset.editingId = item.id;
 
         // Stocker le chemin de l'image existante pour le cas où on ne la change pas
@@ -554,7 +556,8 @@ class ListsManager {
         const addBtn = document.getElementById('add-item-btn');
         const cancelBtn = document.getElementById('cancel-edit-btn');
         
-        addBtn.textContent = 'Ajouter';
+        addBtn.innerHTML = '+';
+        addBtn.className = 'btn btn-icon';
         delete addBtn.dataset.editingId;
         
         // Masquer le bouton d'annulation

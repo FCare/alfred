@@ -90,12 +90,36 @@ body {
     border: none;
     font-size: 18px;
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    min-width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
 }
 
 .btn-icon:hover {
     background: #f3f4f6;
+}
+
+.btn-icon.btn-success {
+    color: #16a34a;
+    background: #f0fdf4;
+}
+
+.btn-icon.btn-success:hover {
+    background: #dcfce7;
+}
+
+.btn-icon.btn-cancel {
+    color: #dc2626;
+    background: #fef2f2;
+}
+
+.btn-icon.btn-cancel:hover {
+    background: #fee2e2;
 }
 
 .btn-danger:hover {
