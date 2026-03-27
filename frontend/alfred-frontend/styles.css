@@ -251,14 +251,22 @@ body {
 /* Ajout d'élément */
 .add-item {
     display: grid;
-    grid-template-columns: 2fr 1fr 2fr auto auto;
+    grid-template-columns: 2fr 1fr 2fr auto auto auto;
     gap: 8px;
     margin-bottom: 20px;
+    align-items: center;
 }
 
 /* Layout pour les listes todo (sans quantité) */
 .add-item.todo-layout {
-    grid-template-columns: 2fr 2fr auto auto;
+    grid-template-columns: 2fr 2fr auto auto auto;
+}
+
+/* Container pour les boutons d'action */
+.add-item-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
 }
 
 .add-item.todo-layout #new-item-quantity {
