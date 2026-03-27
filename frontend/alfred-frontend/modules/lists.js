@@ -353,6 +353,9 @@ class ListsManager {
                     this.showMessage('Erreur lors de l\'upload de la photo', 'error');
                     return;
                 }
+            } else if (isEditing && addBtn.dataset.existingImagePath) {
+                // En mode édition, si pas de nouvelle photo, garder l'existante
+                itemData.image_path = addBtn.dataset.existingImagePath;
             }
 
             let resultItem;
@@ -407,6 +410,7 @@ class ListsManager {
         
         addBtn.textContent = 'Ajouter';
         delete addBtn.dataset.editingId;
+        delete addBtn.dataset.existingImagePath;
         
         // Masquer le bouton d'annulation
         if (cancelBtn) {
@@ -506,6 +510,10 @@ class ListsManager {
         const commentInput = document.getElementById('new-item-comment');
         const addBtn = document.getElementById('add-item-btn');
         const cancelBtn = document.getElementById('cancel-edit-btn');
+        const photoBtn = document.getElementById('photo-btn');
+        const previewDiv = document.getElementById('photo-preview');
+        const previewImg = document.getElementById('preview-image');
+        const previewName = document.getElementById('preview-name');
 
         nameInput.value = item.name || '';
         quantityInput.value = item.quantity || '';
@@ -515,9 +523,23 @@ class ListsManager {
         addBtn.textContent = 'Modifier';
         addBtn.dataset.editingId = item.id;
 
+        // Stocker le chemin de l'image existante pour le cas où on ne la change pas
+        if (item.image_path) {
+            addBtn.dataset.existingImagePath = item.image_path;
+        }
+
         // Afficher le bouton d'annulation
         if (cancelBtn) {
             cancelBtn.style.display = 'inline-block';
+        }
+
+        // Afficher la photo existante si elle existe
+        if (item.image_path && previewDiv && previewImg && previewName) {
+            previewImg.src = `/api/v1/upload/image/${item.image_path}`;
+            previewName.textContent = 'Photo actuelle (cliquer pour changer)';
+            previewDiv.style.display = 'block';
+            photoBtn.classList.add('photo-btn-selected');
+            photoBtn.title = 'Photo actuelle - cliquer pour changer';
         }
 
         // Scroll vers le formulaire
