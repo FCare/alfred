@@ -47,6 +47,11 @@ class ListsManager {
             addItemBtn.addEventListener('click', () => this.addItem());
         }
 
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        if (cancelEditBtn) {
+            cancelEditBtn.addEventListener('click', () => this.cancelEdit());
+        }
+
         const newItemInput = document.getElementById('new-item-input');
         if (newItemInput) {
             newItemInput.addEventListener('keypress', (e) => {
@@ -289,35 +294,52 @@ class ListsManager {
         const removeBtn = card.querySelector('.item-remove');
         removeBtn.addEventListener('click', () => this.removeItem(item.id));
 
+        // Event listener pour édition au clic sur l'élément
+        const itemDetails = card.querySelector('.item-details');
+        itemDetails.addEventListener('click', () => this.editItem(item));
+        itemDetails.style.cursor = 'pointer';
+
         return card;
     }
 
     /**
-     * Ajouter un élément
+     * Ajouter ou modifier un élément
      */
     async addItem() {
         const nameInput = document.getElementById('new-item-input');
         const quantityInput = document.getElementById('new-item-quantity');
         const commentInput = document.getElementById('new-item-comment');
         const photoInput = document.getElementById('new-item-photo');
+        const addBtn = document.getElementById('add-item-btn');
 
         const itemName = nameInput.value.trim();
         if (!itemName || !this.currentList) return;
+
+        // Vérifier si on est en mode édition
+        const editingId = addBtn.dataset.editingId;
+        const isEditing = !!editingId;
 
         try {
             // Préparer les données selon le type de liste
             const listType = this.currentList.list_type;
             const itemData = {
                 name: itemName,
-                description: commentInput.value.trim() || null,
-                is_checked: false
+                description: commentInput.value.trim() || null
             };
+
+            // Pour l'ajout seulement, définir is_checked
+            if (!isEditing) {
+                itemData.is_checked = false;
+            }
 
             // Ajouter la quantité seulement si ce n'est pas une todo et qu'elle est renseignée
             if (listType !== 'todo') {
                 const quantity = quantityInput.value.trim();
                 if (quantity) {
                     itemData.quantity = quantity;
+                } else if (isEditing) {
+                    // Pour l'édition, on peut vouloir vider la quantité
+                    itemData.quantity = null;
                 }
             }
 
@@ -333,21 +355,40 @@ class ListsManager {
                 }
             }
 
-            const newItem = await alfredAPI.createItem(this.currentList.id, itemData);
-
-            // Ajouter à la liste actuelle
-            if (!this.currentList.items) {
-                this.currentList.items = [];
+            let resultItem;
+            
+            if (isEditing) {
+                // Mode édition
+                resultItem = await alfredAPI.updateItem(editingId, itemData);
+                
+                // Mettre à jour l'élément dans la liste locale
+                const itemIndex = this.currentList.items.findIndex(item => item.id == editingId);
+                if (itemIndex !== -1) {
+                    this.currentList.items[itemIndex] = resultItem;
+                }
+                
+                this.showMessage('Élément modifié avec succès', 'success');
+            } else {
+                // Mode ajout
+                resultItem = await alfredAPI.createItem(this.currentList.id, itemData);
+                
+                // Ajouter à la liste actuelle
+                if (!this.currentList.items) {
+                    this.currentList.items = [];
+                }
+                this.currentList.items.push(resultItem);
+                
+                this.showMessage('Élément ajouté avec succès', 'success');
             }
-            this.currentList.items.push(newItem);
 
             // Réafficher et nettoyer
             this.renderItems();
             this.clearAddItemForm();
 
         } catch (error) {
-            console.error('Erreur ajout élément:', error);
-            this.showMessage('Erreur lors de l\'ajout de l\'élément', 'error');
+            console.error('Erreur:', error);
+            const action = isEditing ? 'modification' : 'ajout';
+            this.showMessage(`Erreur lors de la ${action} de l'élément`, 'error');
         }
     }
 
@@ -359,6 +400,18 @@ class ListsManager {
         document.getElementById('new-item-quantity').value = '';
         document.getElementById('new-item-comment').value = '';
         document.getElementById('new-item-photo').value = '';
+        
+        // Restaurer le mode ajout
+        const addBtn = document.getElementById('add-item-btn');
+        const cancelBtn = document.getElementById('cancel-edit-btn');
+        
+        addBtn.textContent = 'Ajouter';
+        delete addBtn.dataset.editingId;
+        
+        // Masquer le bouton d'annulation
+        if (cancelBtn) {
+            cancelBtn.style.display = 'none';
+        }
         
         // Réapplique l'adaptation de l'interface (au cas où le type aurait changé)
         if (this.currentList) {
@@ -441,6 +494,53 @@ class ListsManager {
             console.error('Erreur suppression élément:', error);
             this.showMessage('Erreur lors de la suppression', 'error');
         }
+    }
+
+    /**
+     * Éditer un élément existant
+     */
+    editItem(item) {
+        // Pré-remplir le formulaire avec les données de l'élément
+        const nameInput = document.getElementById('new-item-input');
+        const quantityInput = document.getElementById('new-item-quantity');
+        const commentInput = document.getElementById('new-item-comment');
+        const addBtn = document.getElementById('add-item-btn');
+        const cancelBtn = document.getElementById('cancel-edit-btn');
+
+        nameInput.value = item.name || '';
+        quantityInput.value = item.quantity || '';
+        commentInput.value = item.description || '';
+
+        // Changer le bouton et stocker l'ID de l'élément en cours d'édition
+        addBtn.textContent = 'Modifier';
+        addBtn.dataset.editingId = item.id;
+
+        // Afficher le bouton d'annulation
+        if (cancelBtn) {
+            cancelBtn.style.display = 'inline-block';
+        }
+
+        // Scroll vers le formulaire
+        document.querySelector('.add-item').scrollIntoView({ behavior: 'smooth' });
+        nameInput.focus();
+    }
+
+    /**
+     * Annuler l'édition
+     */
+    cancelEdit() {
+        const addBtn = document.getElementById('add-item-btn');
+        const cancelBtn = document.getElementById('cancel-edit-btn');
+        
+        addBtn.textContent = 'Ajouter';
+        delete addBtn.dataset.editingId;
+        
+        // Masquer le bouton d'annulation
+        if (cancelBtn) {
+            cancelBtn.style.display = 'none';
+        }
+        
+        this.clearAddItemForm();
     }
 
     /**
