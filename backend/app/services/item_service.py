@@ -150,6 +150,9 @@ class ItemService:
         }
         changes = {}
         
+        # Get explicitly set fields to handle None values correctly
+        set_fields = item_data.model_dump(exclude_unset=True)
+        
         # Update fields that are provided
         if item_data.name is not None:
             item.name = item_data.name
@@ -163,7 +166,8 @@ class ItemService:
             item.description = item_data.description
             changes["description"] = {"old": old_values["description"], "new": item_data.description}
         
-        if item_data.image_path is not None:
+        # For image_path, handle None as a valid value (to remove the image)
+        if 'image_path' in set_fields:
             item.image_path = item_data.image_path
             changes["image_path"] = {"old": old_values["image_path"], "new": item_data.image_path}
         

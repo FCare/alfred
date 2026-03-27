@@ -599,8 +599,8 @@ body {
 }
 
 .photo-preview img {
-    max-width: 100px;
-    max-height: 100px;
+    max-width: 150px;
+    max-height: 150px;
     object-fit: cover;
     border-radius: 6px;
     border: 2px solid #e0e0e0;
@@ -625,9 +625,9 @@ body {
     right: -8px;
     width: 24px;
     height: 24px;
-    background: #dc2626;
-    color: white;
-    border: none;
+    background: rgba(255, 255, 255, 0.9);
+    color: #666;
+    border: 1px solid #ddd;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
@@ -635,12 +635,15 @@ body {
     justify-content: center;
     font-size: 12px;
     font-weight: bold;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     z-index: 10;
+    transition: all 0.2s ease;
 }
 
 .photo-delete-btn:hover {
-    background: #b91c1c;
+    background: #dc2626;
+    color: white;
+    border-color: #dc2626;
     transform: scale(1.1);
 }
 
